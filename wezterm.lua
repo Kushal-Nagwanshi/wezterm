@@ -4,8 +4,12 @@ local mux = wezterm.mux
 local act = wezterm.action
 local wallpaper_dir = require("env").WALLPAPER_DIR
 local wallpaper_dir_dd = require("env").WALLPAPER_DIR_DD
+
+local project_dir = require("env").PROJECT_DIR
 local project_zoro = require("env").PROJECT_ZORO
 local project_japdict = require("env").PROJECT_JAPDICT
+
+local xdg_config_home = os.getenv("xdg_config_home")
 -- This table will hold the configuration.
 local config = {}
 
@@ -26,7 +30,7 @@ wezterm.on('gui-startup', function()
     local tab, build_pane, window = mux.spawn_window {
         workspace = 'wezterm-config',
         cwd = home_dir,
-        args = { 'nvim', "./.wezterm.lua" },
+        args = { 'nvim', xdg_config_home.."/wezterm/wezterm.lua" },
         width = 90,
         height = 60,
         x = 10,
@@ -35,8 +39,8 @@ wezterm.on('gui-startup', function()
 
     -- Main Workspace
     local tab, pane, window = mux.spawn_window {
-        workspace = 'nvim',
-        args = { 'nvim' },
+        workspace = 'project',
+        args = { 'nvim', project_dir },
     }
 
     local tab, pane, window = mux.spawn_window {
@@ -61,7 +65,7 @@ wezterm.on('gui-startup', function()
 
 
     -- We want to startup in the coding workspace
-    mux.set_active_workspace 'nvim'
+    mux.set_active_workspace 'project'
 end)
 
 ------------------------TITLE and RESIZE---------------------------------------
