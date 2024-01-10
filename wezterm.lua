@@ -29,8 +29,8 @@ wezterm.on('gui-startup', function()
     local home_dir = wezterm.home_dir
     local tab, build_pane, window = mux.spawn_window {
         workspace = 'wezterm-config',
-        cwd = home_dir,
-        args = { 'nvim', xdg_config_home.."/wezterm/wezterm.lua" },
+        cwd =  xdg_config_home.."/wezterm",
+        args = { 'nvim', './wezterm.lua' },
         width = 90,
         height = 60,
         x = 10,
@@ -40,7 +40,8 @@ wezterm.on('gui-startup', function()
     -- Main Workspace
     local tab, pane, window = mux.spawn_window {
         workspace = 'project',
-        args = { 'nvim', project_dir },
+        cwd = project_dir ,
+        args = { 'nvim' },
     }
 
     local tab, pane, window = mux.spawn_window {
