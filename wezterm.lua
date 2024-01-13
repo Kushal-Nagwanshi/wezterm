@@ -12,7 +12,7 @@ local project_japdict = require("env").PROJECT_JAPDICT
 local xdg_config_home = os.getenv("xdg_config_home")
 -- This table will hold the configuration.
 local config = {}
-
+local newtabs = require("newtabs")
 -- In newer versions of wezterm, use the config_builder which will
 -- help provide clearer error messages
 if wezterm.config_builder then
@@ -28,10 +28,10 @@ config.front_end = "WebGpu"
 wezterm.on('gui-startup', function()
     local home_dir = wezterm.home_dir
     local tab, build_pane, window = mux.spawn_window {
-        workspace = 'wezterm-config',
-        cwd =  xdg_config_home.."/wezterm",
+        cwd = xdg_config_home .. "/wezterm",
         args = { 'nvim', './wezterm.lua' },
         width = 90,
+        workspace = 'wezterm-config',
         height = 60,
         x = 10,
         y = 300,
@@ -40,7 +40,7 @@ wezterm.on('gui-startup', function()
     -- Main Workspace
     local tab, pane, window = mux.spawn_window {
         workspace = 'project',
-        cwd = project_dir ,
+        cwd = project_dir,
         args = { 'nvim' },
     }
 
@@ -166,6 +166,16 @@ wezterm.on('update-right-status', function(window, pane)
     window:set_right_status(window:active_workspace())
 end)
 
+wezterm.on('toggle-opacity', function(window, pane)
+    local overrides = window:get_config_overrides() or {}
+    if not overrides.window_background_opacity then
+        overrides.window_background_opacity = 1
+    else
+        overrides.window_background_opacity = nil
+    end
+    window:set_config_overrides(overrides)
+end)
+
 -- timeout_milliseconds defaults to 1000 and can be omitted
 config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 1000 }
 config.keys = {
@@ -185,6 +195,12 @@ config.keys = {
         mods = 'LEADER',
         action = act.ReloadConfiguration,
     },
+    ------------------------------------opacity---------------------------------
+    {
+        key = 'o',
+        mods = 'CTRL|META',
+        action = wezterm.action.EmitEvent 'toggle-opacity',
+    },
     -----------------------------------command pallet-------------------------------
     {
         key = ';',
@@ -203,17 +219,17 @@ config.keys = {
     },
     { key = '9', mods = 'CTRL|ALT', action = act.SwitchWorkspaceRelative(1) },
     { key = '0', mods = 'CTRL|ALT', action = act.SwitchWorkspaceRelative(-1) },
-    -- Prompt for a name to use for a new workspace and switch to it.
     {
+        -- Prompt for a name to use for a new workspace and switch to it.
         -- Start a new workspace or switch to existing one with a prompt asking
         -- for name
-        key = 'w',
+        key = '8',
         mods = 'LEADER',
         action = act.PromptInputLine {
             description = wezterm.format {
-                { Attribute = { Intensity = 'Bold' } },
+                --{ Attribute = { Intensity = 'Bold' } },
                 { Foreground = { Color = 'hsl(200,45%,55%)' } },
-                { Text = 'Enter name for new workspace' .. wallpaper_dir },
+                { Text = 'Enter name for new workspace' },
             },
             action = wezterm.action_callback(function(window, pane, line)
                 -- line will be `nil` if they hit escape without entering anything
@@ -233,23 +249,74 @@ config.keys = {
     ----------------------------------------Windows----------------------------
     { key = 'n', mods = 'LEADER',   action = act.SpawnWindow },
     {
-        key = 'Z',
+        -- Start a new Tab from the options (preconfigured)
+        key = '2',
+        mods = 'LEADER',
+        action = act.PromptInputLine {
+            description = wezterm.format {
+                { Foreground = { Color = 'hsl(30,100%,50%)' } },
+                { Text = [[Chose from the following (either type the name or enter the number):
+1.wezterm
+2.project
+3.zoro
+4.japdict
+5.logseq
+                ]], },
+            },
+
+            action = wezterm.action_callback(function(window, pane, line)
+                if line then
+                    window:perform_action(
+                        act.SpawnCommandInNewTab {
+                            cwd = newtabs[line].cwd,
+                            args = newtabs[line].args,
+                        },
+                        pane)
+                end
+            end),
+        },
+    },
+    {
+        key = 'w',
         mods = 'LEADER',
         action = act.SpawnCommandInNewTab {
-            --workspace = 'project',
+            cwd = xdg_config_home .. "/wezterm",
+            args = { 'nvim', './wezterm.lua' },
+        }
+    },
+    {
+        key = 'p',
+        mods = 'LEADER',
+        action = act.SpawnCommandInNewTab {
+            cwd = project_dir,
+            args = { 'nvim', '.' },
+        }
+    },
+    {
+        key = 'z',
+        mods = 'LEADER',
+        action = act.SpawnCommandInNewTab {
             cwd = project_zoro,
             args = { 'nvim' },
         }
     },
     {
-        key = 'J',
+        key = 'j',
         mods = 'LEADER',
         action = act.SpawnCommandInNewTab {
-            --workspace = 'project',
             cwd = project_japdict,
             args = { 'nvim', '.' },
         }
     },
+    {
+        key = 'l',
+        mods = 'LEADER',
+        action = act.SpawnCommandInNewTab {
+            cwd = "D:/Logseq/pages",
+            args = { 'nvim', '.' },
+        }
+    },
+
     ----------------------------------------Tabs-------------------------------
     { key = '[', mods = 'ALT|CTRL', action = act.ActivateTabRelative(-1) },
     { key = ']', mods = 'ALT|CTRL', action = act.ActivateTabRelative(1) },
@@ -275,26 +342,6 @@ config.keys = {
         action = act.CloseCurrentPane { confirm = true },
     },
     {
-        key = 'h',
-        mods = 'LEADER',
-        action = act.ActivatePaneDirection 'Left',
-    },
-    {
-        key = 'l',
-        mods = 'LEADER',
-        action = act.ActivatePaneDirection 'Right',
-    },
-    {
-        key = 'k',
-        mods = 'LEADER',
-        action = act.ActivatePaneDirection 'Up',
-    },
-    {
-        key = 'j',
-        mods = 'LEADER',
-        action = act.ActivatePaneDirection 'Down',
-    },
-    {
         key = 'LeftArrow',
         mods = 'META',
         action = act.ActivatePaneDirection 'Left',
@@ -313,6 +360,16 @@ config.keys = {
         key = 'DownArrow',
         mods = 'META',
         action = act.ActivatePaneDirection 'Down',
+    },
+    {
+        key = 'C',
+        mods = 'CTRL|SHIFT',
+        action = wezterm.action.CopyTo 'ClipboardAndPrimarySelection',
+    },
+    {
+        key = 'V',
+        mods = 'CTRL|SHIFT',
+        action = act.PasteFrom 'Clipboard',
     },
 }
 
